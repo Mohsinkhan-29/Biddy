@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  // migrations need a direct (non-pooler) connection on Neon
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  googleId      String         @unique
+  email         String         @unique
+  name          String
+  picture       String?
+  plan          String         @default("free")
+  /// paid plans run until this date, then drop back to free (null = no expiry)
+  planExpiresAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  analyses      Analysis[]
+  proposals     Proposal[]
+  refreshTokens RefreshToken[]
+  usages        Usage[]
+  upgradeRequests UpgradeRequest[]
+}
+
+/// A user asking for Standard/Premium after paying manually; approved in /admin.
+model UpgradeRequest {
+  id         String    @id @default(cuid())
+  userId     String
+  plan       String
+  paymentRef String
+  status     String    @default("pending") // pending | approved | rejected
+  createdAt  DateTime  @default(now())
+  decidedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model Proposal {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  company   String?
+  proposal  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Analysis {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  analysis  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Usage {
+  id                 String @id @default(cuid())
+  userId             String
+  month              String
+  tokensUsed         Int    @default(0)
+  proposalsGenerated Int    @default(0)
+  analysesGenerated  Int    @default(0)
+  apiCalls           Int    @default(0)
+  user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

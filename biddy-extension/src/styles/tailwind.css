@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scoped reset — Tailwind's preflight is disabled globally (see tailwind.config.js)
+   so it never touches Upwork's own page. This block re-applies just enough
+   of a reset inside Biddy's own shadow roots / extension pages. */
+:host,
+#root {
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-md border border-biddy-border bg-biddy-surface p-2 text-biddy-text placeholder:text-biddy-muted focus:outline-none focus:ring-1 focus:ring-biddy-accent;
+  }
+}
