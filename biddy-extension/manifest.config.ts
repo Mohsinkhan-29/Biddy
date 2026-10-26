@@ -13,6 +13,10 @@ const apiOrigin = new URL(process.env.VITE_API_URL || "http://localhost:4000").o
 
 export default defineManifest({
   manifest_version: 3,
+  // Public key → fixed extension ID (hcngphenchjjddpecfdjbenbnkcimppj) on every machine, so Google
+  // sign-in and the backend's ALLOWED_ORIGINS work for everyone who installs
+  // the zip. Public by design; the matching .pem private key stays off GitHub.
+  key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3p2cD9OOaNGLj+fTKa08vouUdAOCqCEUotUdW9YPbsf1uYOkMclRTXdrMTUL6/eBPjovYkEvuO+KWZ5c2Kjl6Pdnhi5YCJe3MgI33VbknjEFbCf3/SSKiLulcRUzUrWtf9lhpHNCR9OQDZLh4WIf/ZMos7BlvGJb2GoYr7GDGDZY6SS2rbZzEknOw8oF8lLXSBylbu8T02mTEAc9dJlVImqbrDZTclnKk7GklmQ0qTOcPQxJchwg1TFp83TqromEZyrdpn3jtIpofIJcNMV5GyW0ZawpW5KBEdizmRk6MIh2V4wNZFRWsuWZBUPyVLKuy4oScuxFnTOnTl0tjTQuDQIDAQAB",
   name: "Biddy — Upwork Job Intelligence",
   version: pkg.version,
   description: "Analyzes Upwork job pages and drafts AI proposals with Gemini.",
