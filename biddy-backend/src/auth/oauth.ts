@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { logger } from "../utils/logger.js";
 
 export interface GoogleProfile {
   googleId: string;
@@ -62,8 +63,12 @@ export async function verifyGoogleAccessToken(accessToken: string): Promise<Goog
   if (!tokenInfoRes.ok) {
     throw new Error("Invalid or expired Google access token");
   }
-  const tokenInfo = (await tokenInfoRes.json()) as { aud?: string; expires_in?: string };
-  if (tokenInfo.aud !== env.googleClientId) {
+  const tokenInfo = (await tokenInfoRes.json()) as { aud?: string; azp?: string; issued_to?: string };
+  // Google names the requesting client in aud, azp or issued_to depending on token type
+  const issuedFor = [tokenInfo.aud, tokenInfo.azp, tokenInfo.issued_to].filter(Boolean);
+  if (!issuedFor.includes(env.googleClientId)) {
+    // client IDs aren't secret — log both so a mismatch is obvious in the Render logs
+    logger.warn("Google token client mismatch", { tokenIssuedFor: issuedFor, expected: env.googleClientId });
     throw new Error("Google token was not issued for this application");
   }
 

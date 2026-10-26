@@ -1,7 +1,12 @@
 import "dotenv/config";
 
+/** Env values trimmed of whitespace and wrapping quotes — dashboards make those easy to paste in. */
+function clean(name: string): string {
+  return (process.env[name] ?? "").trim().replace(/^["']|["']$/g, "").trim();
+}
+
 function required(name: string): string {
-  const value = process.env[name];
+  const value = clean(name);
   if (!value) throw new Error(`Missing required env var: ${name}`);
   return value;
 }
@@ -34,7 +39,7 @@ export const env = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
 
   // Website sign-in uses a separate "Web application" OAuth client
-  googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? "",
+  googleWebClientId: clean("GOOGLE_WEB_CLIENT_ID"),
 
   // Google accounts allowed into /api/admin, comma-separated
   adminEmails: (process.env.ADMIN_EMAILS ?? "")
