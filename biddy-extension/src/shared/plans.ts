@@ -1,18 +1,15 @@
-import { env } from "./env.js";
-
 /**
- * The source of truth for what each plan may do. User.plan in the DB holds
- * the id; anything unrecognised is treated as free.
+ * Plan catalogue as shown in the extension. The backend enforces the real
+ * limits (biddy-backend/src/config/plans.ts) — this is display only.
  */
-export const PLANS = {
-  free: { ai: false, deep: false, proposalsPerMonth: 0, model: "" },
-  standard: { ai: true, deep: false, proposalsPerMonth: 100, model: env.geminiModel },
-  premium: { ai: true, deep: true, proposalsPerMonth: Infinity, model: env.geminiModelPremium },
-} as const;
+export type PlanId = "free" | "standard" | "premium";
 
-export type PlanId = keyof typeof PLANS;
+export const PLANS: Record<PlanId, { label: string; price: string; ai: boolean; proposalsPerMonth: number }> = {
+  free: { label: "Free", price: "$0", ai: false, proposalsPerMonth: 0 },
+  standard: { label: "Standard", price: "$10 / month", ai: true, proposalsPerMonth: 100 },
+  premium: { label: "Premium", price: "$25 / month", ai: true, proposalsPerMonth: Infinity },
+};
 
-export function planOf(plan: string | undefined): (typeof PLANS)[PlanId] & { id: PlanId } {
-  const id: PlanId = plan === "standard" || plan === "premium" ? plan : "free";
-  return { ...PLANS[id], id };
+export function planOf(plan: string | undefined): PlanId {
+  return plan === "standard" || plan === "premium" ? plan : "free";
 }
