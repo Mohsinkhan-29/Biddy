@@ -84,6 +84,9 @@ interface Signals {
   verified: boolean;
   spent: number;
   hireRate?: number;
+  rating?: number;
+  /** spend or rating shows past hiring */
+  hasHistory: boolean;
   location?: string;
   feedback: string;
 }
@@ -167,6 +170,8 @@ function readSignals(job: ScrapedJob): Signals {
     verified: job.client?.paymentVerified === true,
     spent: job.client?.totalSpent ?? 0,
     hireRate: job.client?.hireRate,
+    rating: job.client?.rating,
+    hasHistory: (job.client?.totalSpent ?? 0) > 0 || (job.client?.rating ?? 0) > 0,
     location: job.client?.location || undefined,
     feedback: (job.client?.recentFeedbackText ?? "").toLowerCase(),
   };
@@ -218,6 +223,12 @@ function readSentiment(s: Signals): { label: AiMetrics["reviewSentiment"]; reaso
       return { label: "Consistently Positive", reason: `Feedback history leans warm ("${good[0]}"), a good sign for smooth collaboration.` };
   }
 
+  if (s.rating !== undefined && s.rating < 4)
+    return {
+      label: "Potential Stress Environment",
+      reason: `Past freelancers rate this client ${s.rating.toFixed(1)}★ — agree scope and milestones in writing.`,
+    };
+
   if (s.demanding.length >= 2 || (s.demanding.length && s.urgent.length))
     return {
       label: "Potential Stress Environment",
@@ -233,9 +244,12 @@ function readSentiment(s: Signals): { label: AiMetrics["reviewSentiment"]; reaso
   if (s.spent >= 10000 && s.verified)
     return { label: "Consistently Positive", reason: `${money(s.spent)} spent on Upwork — an experienced, settled buyer.` };
 
+  if (s.rating !== undefined && s.rating >= 4.7)
+    return { label: "Consistently Positive", reason: `Rated ${s.rating.toFixed(1)}★ by freelancers who've worked with them.` };
+
   return {
     label: "Neutral",
-    reason: s.spent === 0 ? "No hiring history yet, and the brief is matter-of-fact." : "Businesslike brief with no warning signs in the wording.",
+    reason: !s.hasHistory ? "No hiring history yet, and the brief is matter-of-fact." : "Businesslike brief with no warning signs in the wording.",
   };
 }
 
@@ -245,7 +259,7 @@ function readSentiment(s: Signals): { label: AiMetrics["reviewSentiment"]; reaso
 
 function readPersona(s: Signals): string {
   const style =
-    s.spent === 0 && !s.hireRate
+    !s.hasHistory && !s.hireRate
       ? "First-Time Hirer"
       : s.spent >= 25000
         ? "Seasoned Buyer"
@@ -291,7 +305,9 @@ function collectFlags(s: Signals): { green: string[]; red: string[] } {
 
   if (s.spent >= 10000) green.push(`Client has spent ${money(s.spent)} on Upwork`);
   else if (s.spent >= 1000) green.push(`Proven buyer — ${money(s.spent)} spent`);
-  if (s.verified && s.spent === 0) green.push("Verified payment, first project — no competing loyalties");
+  if (s.verified && !s.hasHistory) green.push("Verified payment, first project — no competing loyalties");
+  if (s.rating !== undefined && s.rating >= 4.7) green.push(`Rated ${s.rating.toFixed(1)}★ by past freelancers`);
+  if (s.rating !== undefined && s.rating < 4) red.push(`Low client rating (${s.rating.toFixed(1)}★)`);
   if (s.proposals === 1) green.push("Fewer than 5 proposals so far — early mover advantage");
   else if (s.proposals === 2) green.push("Only 5–10 proposals so far — still room to stand out");
   if (s.freshHours !== undefined && s.freshHours <= 3) green.push("Posted within the last few hours");
@@ -318,6 +334,7 @@ function scoreBid(s: Signals, scope: number, redCount: number): number {
   else if (s.spent >= 5000) score += 8;
   else if (s.spent >= 500) score += 4;
   if (s.hireRate !== undefined) score += (s.hireRate - 0.5) * 16;
+  if (s.rating !== undefined) score += s.rating >= 4.7 ? 6 : s.rating < 4 ? -8 : 0;
 
   // competition + timing
   const comp = [0, 14, 9, 4, 0, -6, -12][s.proposals] ?? 0;
@@ -384,7 +401,7 @@ function proposalMove(s: Signals, scope: number): string {
       `Stand out in a crowded field: reference a specific detail from their brief in line one, then show one relevant result.`,
     ]);
 
-  if (s.spent === 0)
+  if (!s.hasHistory)
     return pick([
       `First-time hirer — walk them through your process in 3 short steps; reassurance wins here more than price.`,
       `New to Upwork clients value clarity: outline milestones, communication rhythm and what you need from them.`,

@@ -330,7 +330,7 @@ function reportEmptyFields(
   }
 
   if (empty.length) {
-    console.warn(
+    console.debug(
       "[Biddy] scrapeJobDetailPage: title found, but these " +
         "confirmed fields came back empty:\n  - " +
         empty.join("\n  - "),

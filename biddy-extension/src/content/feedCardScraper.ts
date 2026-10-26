@@ -9,6 +9,7 @@ import {
   fromText,
   locationAfterSpent,
   longestBlock,
+  parseRating,
 } from "./scrapeHelpers";
 import type { ScrapedJob } from "@shared/types";
 
@@ -139,7 +140,7 @@ function reportEmptyFields(job: ScrapedJob): void {
   }
 
   if (empty.length) {
-    console.warn(
+    console.debug(
       "[Biddy] scrapeFeedCard: card found, but these confirmed fields came back empty:\n  - " +
       empty.join("\n  - "),
     );
@@ -217,6 +218,8 @@ export function scrapeFeedCard(
 
       location:
         textOf(card, SELECTORS.jobCard.clientLocation) || locationAfterSpent(card),
+
+      rating: parseRating(textOf(card, '[data-test="rating-minimal"]')),
     },
   };
 

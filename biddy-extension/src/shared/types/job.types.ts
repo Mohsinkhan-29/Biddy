@@ -19,6 +19,9 @@ export interface ScrapedClient {
   location?: string;
 
   recentFeedbackText?: string;
+
+  /** Average stars from past freelancers (0-5); present means the client has hired before. */
+  rating?: number;
 }
 
 export interface ScrapedJob {

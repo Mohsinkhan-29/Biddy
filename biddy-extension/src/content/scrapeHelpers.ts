@@ -44,11 +44,26 @@ export const fromText = {
 };
 
 /** Leaf right after the "$X spent" leaf, if it looks like a place name. */
+/**
+ * The client row reads "Payment verified · ★ 5.0 · $25K+ spent · Canada" —
+ * spend and rating are optional, so take the first place-like leaf after
+ * whichever of "spent" / "Payment (un)verified" appears last.
+ */
 export function locationAfterSpent(root: ParentNode): string {
   const leaves = leafTexts(root);
-  const i = leaves.findIndex((l) => /spent$/i.test(l));
-  const next = i >= 0 ? leaves[i + 1] : undefined;
-  return next && /^[A-Za-z][A-Za-z .,'()-]{1,40}$/.test(next) ? next : "";
+  let i = leaves.findIndex((l) => /spent$/i.test(l));
+  if (i < 0) i = leaves.findIndex((l) => /^payment (method )?(un)?verified$/i.test(l));
+  if (i < 0) return "";
+  const place = leaves
+    .slice(i + 1, i + 5)
+    .find((l) => /^[A-Za-z][A-Za-z .,'()-]{1,40}$/.test(l) && !/verified|spent|rating|reviews?/i.test(l));
+  return place ?? "";
+}
+
+/** "5.0" / "4.85" from the client's star rating, if shown. */
+export function parseRating(raw: string): number | undefined {
+  const n = Number(raw.match(/\d(?:\.\d+)?/)?.[0]);
+  return n > 0 && n <= 5 ? n : undefined;
 }
 
 /** Longest paragraph-ish block: the job description on tiles without a tag. */
